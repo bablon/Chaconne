@@ -19,7 +19,7 @@ V_LN = $(V_LN_$(V))
 bins = term
 
 term_srcs = cli-command.c cli-term.c cli-tree.c event-loop.c main.c stream.c \
-	    libregexp.c libunicode.c cutils.c hashtable.c vector.c
+	    libregexp.c libunicode.c cutils.c hashtable.c vector.c heap.c
 term_objs = $(term_srcs:.c=.o)
 
 test_bins = t/str_kpair

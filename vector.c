@@ -2,13 +2,7 @@
 #include <stdlib.h>
 #include <inttypes.h>
 
-struct vector {
-	size_t alloc;
-	size_t size;
-	size_t count;
-
-	void *array;
-};
+#include "vector.h"
 
 struct vector *vector_create(size_t size, size_t alloc)
 {
@@ -52,17 +46,4 @@ void *vector_push(struct vector *v)
 	ret = v->array + v->count * v->size;
 	v->count++;
 	return ret;
-}
-
-void *vector_index(struct vector *v, int index)
-{
-	if (index < 0 || index >= v->count)
-		return NULL;
-
-	return v->array + index * v->size;
-}
-
-size_t vector_len(struct vector *v)
-{
-	return v->count;
 }

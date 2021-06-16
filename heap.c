@@ -25,21 +25,11 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "heap.h"
+
 #define left(i)		(((i) << 1) + 1)
 #define right(i)	(((i) << 1) + 2)
 #define parent(i)	(i > 0 ? (i - 1) >> 1 : 0)
-
-struct heap {
-	size_t alloc;
-	size_t size;
-	size_t count;
-	void *array;
-
-	int (*compare)(const void *, const void *, void *arg);
-	void (*update)(void *elem, int pos, void *arg);
-	void *arg;
-	unsigned char buf[];
-};
 
 struct heap *
 heap_create(size_t alloc, size_t size,
@@ -67,7 +57,7 @@ heap_create(size_t alloc, size_t size,
 
 	h->compare = compare;
 	h->update = update;
-	h->arg = NULL;
+	h->arg = arg;
 
 	return h;
 }
@@ -173,26 +163,4 @@ int heap_insert(struct heap *h, void *elem)
 	heap_update_key(h, i);
 
 	return 0;
-}
-
-int heap_empty(struct heap *h)
-{
-	return h->count == 0;
-}
-
-void *heap_top(struct heap *h)
-{
-	return h->count ? h->array : NULL;
-}
-
-size_t heap_len(struct heap *h)
-{
-	return h->count;
-}
-
-void *heap_index(struct heap *h, size_t index)
-{
-	if (index >= h->count)
-		return NULL;
-	return h->array + index * h->size;
 }

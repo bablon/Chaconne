@@ -289,7 +289,8 @@ void hashtable_delete(struct hashtable *h, void *key)
 	}
 }
 
-void hashtable_travel(struct hashtable *h, void (*func)(const void *k, const void *v))
+void hashtable_travel(struct hashtable *h,
+		void (*func)(const void *k, const void *v, void *data), void *data)
 {
 	size_t i;
 
@@ -297,9 +298,29 @@ void hashtable_travel(struct hashtable *h, void (*func)(const void *k, const voi
 		struct elem *e;
 
 		for (e = h->node[i].next; e; e = e->next) {
-			func(keyptr(h, e), valueptr(h, e));
+			func(keyptr(h, e), valueptr(h, e), data);
 		}
 	}
+}
+
+void hashtable_clear(struct hashtable *h)
+{
+	int i;
+
+	for (i = 0; i < h->bucket_size; i++) {
+		struct elem **pp = &h->node[i].next;
+
+		while (*pp) {
+			struct elem *e = *pp;
+
+			*pp = e->next;
+
+			free_key(h, e);
+			free_value(h, e);
+			free(e);
+		}
+	}
+	h->count = 0;
 }
 
 void hashtable_stat(struct hashtable *h)
@@ -309,4 +330,9 @@ void hashtable_stat(struct hashtable *h)
 	for (i = 0; i < h->bucket_size; i++) {
 		printf("bucket %02zd: count %zd\n", i, h->node[i].count);
 	}
+}
+
+size_t hashtable_count(struct hashtable *h)
+{
+	return h->count;
 }

@@ -34,6 +34,7 @@
 
 #include "cli-term.h"
 #include "stream.h"
+#include "hashtable.h"
 
 #include "libregexp.h"
 
@@ -60,7 +61,7 @@ struct cmd_node {
 
 	struct cmd_node *keyword;
 
-	int (*func)(struct term *term, int argc, char *argv[]);
+	int (*func)(struct term *term, struct cmdopt *opt);
 };
 
 struct parser_state {
@@ -721,7 +722,8 @@ static struct cmd_node *find_best_node(struct cmd_node *head,
 }
 
 int cmd_search(struct cmd_node *head, struct cmd_node **ret, int wordc,
-	       char **words, int *wordi, int argc, char **argv, int *argi)
+	       char **words, int *wordi, int argc, char **argv, int *argi,
+	       struct hashtable *h)
 {
 	struct token *token = NULL;
 	struct cmd_node *target = NULL;
@@ -756,24 +758,21 @@ int cmd_search(struct cmd_node *head, struct cmd_node **ret, int wordc,
 		return 0;
 	if (target->keyword) {
 		int matched = 0;
-		size_t count;
 		struct token *_token;
 		struct cmd_node *_target;
-		int i, _target_pos;
-
-		count = token_count(target->keyword, NULL, 0);
-
-		for (i = 0; i < count; i++)
-			argv[*argi + i] = NULL;
 
 		do {
-			_target = find_best_node(target->keyword, words[*wordi], &_token, &_target_pos);
+			char *key;
+			_target = find_best_node(target->keyword, words[*wordi], &_token, NULL);
 			if (_target == NULL)
 				break;
 
 			matched++;
 
-			argv[*argi + _target_pos] = words[*wordi];
+			if (h) {
+				key = words[*wordi];
+				hashtable_set(h, key, "1");
+			}
 
 			++(*wordi);
 
@@ -785,14 +784,12 @@ int cmd_search(struct cmd_node *head, struct cmd_node **ret, int wordc,
 				_target = find_best_node(_target->children, words[*wordi], &_token, NULL);
 				if (_target == NULL)
 					return CMD_ERR_NO_MATCH;
-				argv[*argi + _target_pos] = words[*wordi];
+				if (h) {
+					hashtable_set(h, key, words[*wordi]);
+				}
 				++(*wordi);
 			}
 		} while (*wordi < wordc);
-
-		if (matched) {
-			(*argi) += count;
-		}
 
 		if (*wordi == wordc) {
 			*ret = target;
@@ -801,7 +798,7 @@ int cmd_search(struct cmd_node *head, struct cmd_node **ret, int wordc,
 	}
 
 	if (target->children)
-		return cmd_search(target->children, ret, wordc, words, wordi, argc, argv, argi);
+		return cmd_search(target->children, ret, wordc, words, wordi, argc, argv, argi, h);
 	else
 		return CMD_ERR_NO_MATCH;
 }
@@ -955,10 +952,10 @@ int cmd_execute(struct term *term, struct cmd_node *tree, const char *line)
 {
 	int i, wordc;
 	char **words;
-	char *argv[1024];
-	int argi = 0, wordi = 0;
+	int wordi = 0;
 	int ret;
 	struct cmd_node *node;
+	struct cmdopt *opt = term_cmdopt(term);
 
 	wordc = line_get_args(line, &words);
 	if (wordc < 0)
@@ -976,13 +973,15 @@ int cmd_execute(struct term *term, struct cmd_node *tree, const char *line)
 		return CMD_ERR_NO_MATCH;
 	}
 
-	ret = cmd_search(tree->children, &node, i, words, &wordi, 1024, argv, &argi);
+	ret = cmd_search(tree->children, &node, i, words, &wordi, 1024, opt->argv, &opt->argc, opt->kpairs);
 	if (ret != 0) {
 		ret = CMD_ERR_NO_MATCH;
 	} else if (!node->func) {
 		ret = CMD_ERR_INCOMPLETE;
 	} else
-		ret = node->func(term, argi, argv);
+		ret = node->func(term, opt);
+
+	cmdopt_clear(opt);
 
 	if (ret != CMD_SUCCESS) {
 		switch (ret) {
@@ -1094,9 +1093,6 @@ static int get_complete(struct cmd_node *tree, const char *word, int *n, char **
 
 	len = word ? strlen(word) : 0;
 
-	if (!word && !head)
-		return CMD_SUCCESS;
-
 	count = token_count(head, word, len);
 	count += token_count(keyword, word, len);
 	if (count == 0)
@@ -1153,7 +1149,7 @@ static int _cmd_complete(struct cmd_node *tree, const char *line,
 	}
 
 	if (_wordc > 0) {
-		ret = cmd_search(tree->children, &base, _wordc, words, &wordi, 1024, argv, &argi);
+		ret = cmd_search(tree->children, &base, _wordc, words, &wordi, 1024, argv, &argi, NULL);
 		if (ret != 0) {
 			return CMD_ERR_NO_MATCH;
 		}
@@ -1218,9 +1214,6 @@ static int get_desc(struct cmd_node *tree, const char *word, int *n,
 
 	len = word ? strlen(word) : 0;
 
-	if (!head && !word)
-		return CMD_SUCCESS;
-
 	count  = token_count(head, word, len);
 	count += token_count(keyword, word, len);
 	if (count <= 0)
@@ -1264,7 +1257,7 @@ static int _cmd_describe(struct cmd_node *tree, const char *line, int wordc,
 	}
 
 	if (_wordc > 0) {
-		ret = cmd_search(tree->children, &base, _wordc, words, &wordi, 1024, argv, &argi);
+		ret = cmd_search(tree->children, &base, _wordc, words, &wordi, 1024, argv, &argi, NULL);
 		if (ret != 0) {
 			return CMD_ERR_NO_MATCH;
 		}
@@ -1323,13 +1316,13 @@ static int elem_compare(const void *a, const void *b)
 /* The command syntax represented by line is from Quagga and gets simplified. */
 
 #define COMMON_COMMAND(func, line, desc)				\
-	static int func(struct term *term, int argc, char *argv[]);	\
+	static int func(struct term *term, struct cmdopt *opt);		\
 									\
 	struct cmd_elem cmd_common_##func = {				\
 		line, desc, func					\
 	};								\
 									\
-	static int func(struct term *term, int argc, char *argv[])
+	static int func(struct term *term, struct cmdopt *opt)
 
 COMMON_COMMAND(list_commands,
 	"list",

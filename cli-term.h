@@ -41,21 +41,33 @@
 struct term;
 struct stream;
 
+#define MAXARGC	64
+
+struct cmdopt {
+	char *argv[MAXARGC];
+	int argc;
+	struct hashtable *kpairs;
+};
+
 struct cmd_elem {
 	const char *line;
 	const char *desc;
-	int (*func)(struct term *term, int argc, char *argv[]);
+	int (*func)(struct term *term, struct cmdopt *opt);
 } __attribute__((aligned(16)));
 
+struct cmdopt *cmdopt_create(void);
+void cmdopt_clear(struct cmdopt *opt);
+void cmdopt_destroy(struct cmdopt *opt);
+
 #define COMMAND(func, line, desc)					\
-	static int func(struct term *term, int argc, char *argv[]);	\
+	static int func(struct term *term, struct cmdopt *opt);		\
 									\
 	struct cmd_elem cmd_sec_##func					\
 		__attribute__ ((used, section("cmd_section"))) = {	\
 		line, desc, func					\
 	};								\
 									\
-	static int func(struct term *term, int argc, char *argv[])
+	static int func(struct term *term, struct cmdopt *opt)
 
 struct event_loop;
 
@@ -80,6 +92,7 @@ void term_destroy(struct term *term);
 void term_run(struct term *term);
 int term_want_exit(struct term *term);
 
+struct cmdopt *term_cmdopt(struct term *term);
 struct stream *term_ostream(struct term *term);
 struct cmd_node *term_cmd_tree(struct term *term);
 

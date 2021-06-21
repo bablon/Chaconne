@@ -1,6 +1,6 @@
 /*
  * Terminal Input/Output Engine
- * 
+ *
  * Copyright (c) 2021 Jiajia Liu <liujia6264@gmail.com>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -35,6 +35,7 @@
 #include "cli-term.h"
 #include "event-loop.h"
 #include "stream.h"
+#include "hashtable.h"
 
 #define CTRL(c)		(c - '@')
 #define CTRL_BACKSPACE	CTRL('H')
@@ -59,6 +60,63 @@ struct history {
 	int cp, index;
 };
 
+static size_t string_hash(const void *data)
+{
+	size_t hash = 0;
+	const char *p;
+
+	for (p = data; *p; p++) {
+		hash = hash * 31 + *p;
+	}
+
+	return hash;
+}
+
+static int string_compare(const void *a, const void *b)
+{
+	return strcmp(a, b);
+}
+
+struct cmdopt *cmdopt_create(void)
+{
+	struct cmdopt *opt;
+	struct kpattr attr = {
+		.key_is_ptr = 1,
+		.value_is_ptr = 1,
+
+		.hash = string_hash,
+		.compare = string_compare,
+		.free_key = NULL,
+		.free_value = NULL,
+	};
+
+	opt = malloc(sizeof(*opt));
+	if (!opt)
+		return NULL;
+
+	opt->kpairs = hashtable_create(32, &attr);
+	if (!opt->kpairs) {
+		free(opt);
+		return NULL;
+	}
+
+	return opt;
+}
+
+void cmdopt_clear(struct cmdopt *opt)
+{
+	hashtable_clear(opt->kpairs);
+	opt->argc = 0;
+}
+
+void cmdopt_destroy(struct cmdopt *opt)
+{
+	if (opt) {
+		hashtable_destroy(opt->kpairs);
+		free(opt);
+	}
+}
+
 struct term {
 	int fd;
 
@@ -76,6 +134,7 @@ struct term {
 	struct event_source *signals;
 
 	struct cmd_node *cmd_tree;
+	struct cmdopt *cmdopt;
 };
 
 const char *history_previous(struct history *hist)
@@ -215,6 +274,11 @@ struct stream *term_ostream(struct term *term)
 	return term->out;
 }
 
+struct cmdopt *term_cmdopt(struct term *term)
+{
+	return term->cmdopt;
+}
+
 struct cmd_node *term_cmd_tree(struct term *term)
 {
 	return term->cmd_tree;
@@ -332,6 +396,10 @@ struct term *term_create(struct event_loop *loop, int fd, const char *name)
 	if (term->source == NULL)
 		goto err_event_source;
 
+	term->cmdopt = cmdopt_create();
+	if (!term->cmdopt)
+		goto err_cmdopt;
+
 	term->cmd_tree = cmd_tree_build_default();
 
 	if (fd != STDIN_FILENO) {
@@ -345,6 +413,8 @@ struct term *term_create(struct event_loop *loop, int fd, const char *name)
 
 	return term;
 
+err_cmdopt:
+	event_source_remove(term->source);
 err_event_source:
 	history_destroy(term->hist);
 err_history:
@@ -368,6 +438,7 @@ void term_run(struct term *term)
 void term_destroy(struct term *term)
 {
 	cmd_tree_delete(term->cmd_tree);
+	cmdopt_destroy(term->cmdopt);
 	event_source_remove(term->source);
 	history_destroy(term->hist);
 	stream_free(term->out);
@@ -378,7 +449,7 @@ void term_destroy(struct term *term)
 static void term_backward_char(struct term *term)
 {
 	if (term->in->cp) {
-		term->in->cp--;	
+		term->in->cp--;
 		stream_putc(term->out, '\b');
 	}
 }

@@ -40,11 +40,15 @@ struct kpattr {
 	void (*free_value)(void *data);
 };
 
+struct hashtable;
+
+size_t hashtable_count(struct hashtable *h);
 struct hashtable *hashtable_create(size_t bucket_size, struct kpattr *attr);
 void *hashtable_get(struct hashtable *h, const void *key);
 void hashtable_set(struct hashtable *h, void *key, void *data);
 void hashtable_destroy(struct hashtable *h);
 void hashtable_delete(struct hashtable *h, void *key);
-void hashtable_travel(struct hashtable *h, void (*func)(const void *k, const void *v));
+void hashtable_clear(struct hashtable *h);
+void hashtable_travel(struct hashtable *h, void (*func)(const void *k, const void *v, void *), void *);
 
 #endif

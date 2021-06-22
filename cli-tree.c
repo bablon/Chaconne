@@ -60,6 +60,7 @@ struct cmd_node {
 	size_t nr_tokens;
 
 	struct cmd_node *keyword;
+	struct cmdoptattr *optattr;
 
 	int (*func)(struct term *term, struct cmdopt *opt);
 };
@@ -212,7 +213,6 @@ static void cmd_node_insert(struct cmd_node *parent, struct cmd_node *new, int k
 
 	for (; *pp; pp = &(*pp)->sibling) {
 		count++;
-		;
 	}
 
 	*pp = new;
@@ -433,8 +433,10 @@ static int parser_end(struct parser_state *state)
 		return -EINVAL;
 
 	state->parent->func = state->elem->func;
+	state->parent->optattr = state->elem->optattr;
 	if (state->parent->tokens[0].type == TOKEN_VARARG) {
 		state->parent->parent->func = state->elem->func;
+		state->parent->parent->optattr = state->elem->optattr;
 	}
 
 	return 0;
@@ -948,6 +950,53 @@ static void strip_tail_blank(const char *str, char **end)
 	*end = ptr;
 }
 
+int cmdopt_parse(struct term *term, struct cmdopt *opt, struct cmdoptattr *optattr)
+{
+	int kpcount = hashtable_count(opt->kpairs);
+	int i;
+	struct optattr *attr;
+
+	if (!optattr)
+		return 0;
+
+	if (optattr->init)
+		optattr->init(optattr->buf, optattr->bufsize);
+	else
+		memset(optattr->buf, 0, optattr->bufsize);
+
+	if (!kpcount && !opt->argc)
+		return 0;
+
+	for (i = 0; i < optattr->size; i++) {
+		attr = &optattr->attrs[i];
+		if (attr->index >= 0 && attr->index < opt->argc) {
+			int r;
+			r = attr->set(opt->argv[attr->index], optattr->buf + attr->offset);
+			if (r < 0) {
+				term_print(term, "invalid option %s.\r\n", opt->argv[attr->index]);
+				return -1;
+			}
+		} else if (attr->key) {
+			int r;
+			void *value;
+
+			value = hashtable_get(opt->kpairs, attr->key);
+			if (!value)
+				continue;
+
+			r = attr->set(value, optattr->buf + attr->offset);
+			if (r < 0) {
+				term_print(term, "invalid keyword %s:%s.\r\n", attr->key, value);
+				return -1;
+			}
+		} else {
+			term_print(term, "invalid attribute at %d\n", i);
+		}
+	}
+
+	return 0;
+}
+
 int cmd_execute(struct term *term, struct cmd_node *tree, const char *line)
 {
 	int i, wordc;
@@ -978,8 +1027,11 @@ int cmd_execute(struct term *term, struct cmd_node *tree, const char *line)
 		ret = CMD_ERR_NO_MATCH;
 	} else if (!node->func) {
 		ret = CMD_ERR_INCOMPLETE;
-	} else
-		ret = node->func(term, opt);
+	} else {
+		ret = cmdopt_parse(term, opt, node->optattr);
+		if (ret == 0)
+			ret = node->func(term, opt);
+	}
 
 	cmdopt_clear(opt);
 

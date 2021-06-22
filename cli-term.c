@@ -94,6 +94,7 @@ struct cmdopt *cmdopt_create(void)
 	if (!opt)
 		return NULL;
 
+	opt->argc = 0;
 	opt->kpairs = hashtable_create(32, &attr);
 	if (!opt->kpairs) {
 		free(opt);
@@ -607,7 +608,7 @@ static void term_complete_command(struct term *term)
 
 	ret = cmd_complete(term->cmd_tree, term->in->buf, &num, &keys);
 	if (ret == CMD_ERR_NO_MATCH) {
-		stream_puts(term->out, "% No matched command.\r\n");
+		stream_puts(term->out, "%% No matched command.\r\n");
 		term_prompt(term);
 		term_redraw_line(term);
 	} else if (ret == CMD_COMPLETE_FULL_MATCH) {

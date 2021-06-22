@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdbool.h>
 #include <errno.h>
 #include <string.h>
 #include "cli-term.h"
@@ -31,7 +32,7 @@ void print_args(struct term *term, struct cmdopt *opt)
 
 #define SHOW_STR	"Show running system information\n"
 
-COMMAND(show_history,
+COMMAND(show_history, NULL,
 	"show history",
 	"Show running system information\n"
 	"Display ther command history\n")
@@ -41,7 +42,7 @@ COMMAND(show_history,
 	return 0;
 }
 
-COMMAND(show_cmdtree,
+COMMAND(show_cmdtree, NULL,
 	"show cmdtree",
 	SHOW_STR
 	"Dump command tree (for debug)\n")
@@ -50,7 +51,7 @@ COMMAND(show_cmdtree,
 	return 0;
 }
 
-COMMAND(cmd_system,
+COMMAND(cmd_system, NULL,
 	"system .ARGS",
 	"system shell\n"
 	"command argument list\n")
@@ -82,8 +83,74 @@ COMMAND(cmd_system,
 	}
 }
 
-COMMAND(cmd_keyword,
-	"keyword (t1|t2) {first|second|third FILE} stage {ten|eleven|twelve}",
+struct keywordopt {
+	const char *subcmd;
+	int number;
+	bool eleven;
+};
+
+static struct keywordopt keywordopt;
+
+static void keywordopt_init(void *buf, size_t size)
+{
+	struct keywordopt *k = buf;
+
+	k->subcmd = NULL;
+	k->number = -1;
+	k->eleven = false;
+}
+
+int set_strptr(const char *src, void *buf)
+{
+	const char **pp = buf;
+
+	*pp = src;
+	return 0;
+}
+
+int set_i32(const char *src, void *buf)
+{
+	*(int *)buf = strtol(src, NULL, 10);
+	return 0;
+}
+
+int set_bool(const char *src, void *buf)
+{
+	*(bool *)buf = true;
+	return 0;
+}
+
+static struct optattr keyword_attrs[] = {
+	{
+		.index = 0,
+		.key = NULL,
+		.offset = offsetof(struct keywordopt, subcmd),
+		.set = set_strptr,
+	},
+	{
+		.index = -1,
+		.key = "third",
+		.offset = offsetof(struct keywordopt, number),
+		.set = set_i32,
+	},
+	{
+		.index = -1,
+		.key = "eleven",
+		.offset = offsetof(struct keywordopt, eleven),
+		.set = set_bool,
+	},
+};
+
+static struct cmdoptattr keyword_optattr = {
+	.attrs = keyword_attrs,
+	.size = sizeof(keyword_attrs)/sizeof(keyword_attrs[0]),
+	.buf = &keywordopt,
+	.bufsize = sizeof(struct keywordopt),
+	.init = keywordopt_init,
+};
+
+COMMAND(cmd_keyword, &keyword_optattr,
+	"keyword (t1|t2) {first|second|third INT} stage {ten|eleven|twelve}",
 	"keyword example\n"
 	"branch 1\n"
 	"branch 2\n"
@@ -98,5 +165,9 @@ COMMAND(cmd_keyword,
 	)
 {
 	print_args(term, opt);
+	term_print(term, "subcmd %s.\r\n", keywordopt.subcmd);
+	term_print(term, "number %d.\r\n", keywordopt.number);
+	term_print(term, "eleven %d.\r\n", keywordopt.eleven);
+
 	return 0;
 }

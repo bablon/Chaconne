@@ -25,6 +25,8 @@
 #ifndef __CLI_TERM_H__
 #define __CLI_TERM_H__
 
+#include <stddef.h>
+
 #define CMD_SUCCESS              0
 #define CMD_WARNING              1
 #define CMD_ERR_NO_MATCH         2
@@ -49,22 +51,41 @@ struct cmdopt {
 	struct hashtable *kpairs;
 };
 
+struct optattr {
+	int index;
+	char *key;
+
+	unsigned long offset;
+
+	int (*set)(const char *src, void *dst);
+};
+
+struct cmdoptattr {
+	struct optattr *attrs;
+	unsigned long size;
+
+	void *buf;
+	size_t bufsize;
+	void (*init)(void *buf, size_t size);
+};
+
 struct cmd_elem {
 	const char *line;
 	const char *desc;
 	int (*func)(struct term *term, struct cmdopt *opt);
+	struct cmdoptattr *optattr;
 } __attribute__((aligned(16)));
 
 struct cmdopt *cmdopt_create(void);
 void cmdopt_clear(struct cmdopt *opt);
 void cmdopt_destroy(struct cmdopt *opt);
 
-#define COMMAND(func, line, desc)					\
+#define COMMAND(func, attr, line, desc)					\
 	static int func(struct term *term, struct cmdopt *opt);		\
 									\
 	struct cmd_elem cmd_sec_##func					\
 		__attribute__ ((used, section("cmd_section"))) = {	\
-		line, desc, func					\
+		line, desc, func, attr					\
 	};								\
 									\
 	static int func(struct term *term, struct cmdopt *opt)

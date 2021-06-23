@@ -29,7 +29,7 @@ Command BNF syntax inspired by Quagga
 	vararg : .[A-Z]+
 		;
 
-Here is a complex example in cli-command.c to define the command `keyword (t1|t2) {first|second|third INT} stage {ten|eleven|twelve}`. Pass the option attribute defintion to the macro COMMAND, then the command parser will automatically fill the user-defined argument structure before executing the command.
+The following is a complex example in `cli-command.c` for command `keyword (t1|t2) {first|second|third INT} stage {ten|eleven|twelve}`. The parser will automatically fill the user-defined argument structure before executing the command.
 
 	struct keywordopt {
 		const char *subcmd;
@@ -71,7 +71,7 @@ Here is a complex example in cli-command.c to define the command `keyword (t1|t2
 		"first\n"
 		"second\n"
 		"third\n"
-		"FILE\n"
+		"Integer number\n"
 		"stage\n"
 		"ten\n"
 		"eleven\n"

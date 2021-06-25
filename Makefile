@@ -16,11 +16,11 @@ V_LN_0 = @echo "    LINK   " $@;
 V_LN_1 = 
 V_LN = $(V_LN_$(V))
 
-bins = term
+bins = chaconne
 
-term_srcs = cli-command.c cli-term.c cli-tree.c event-loop.c main.c stream.c \
+chaconne_srcs = cli-command.c cli-term.c cli-tree.c event-loop.c main.c stream.c \
 	    libregexp.c libunicode.c cutils.c hashtable.c vector.c heap.c
-term_objs = $(term_srcs:.c=.o)
+chaconne_objs = $(chaconne_srcs:.c=.o)
 
 test_bins = t/str_kpair
 tshare_srcs = t/test-runner.c t/test-helpers.c

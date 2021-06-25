@@ -48,7 +48,7 @@
 #define ESCAPE		0x1b
 #define TERM_MAXHIST	32
 
-#define TERM_DEFAULT_NAME	"System"
+#define TERM_DEFAULT_NAME	"Chaconne"
 
 struct buffer {
 	char buf[8192];

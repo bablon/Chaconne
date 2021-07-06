@@ -1044,7 +1044,7 @@ int cmd_execute(struct term *term, struct cmd_node *tree, const char *line)
 			term_print(term, "%% Command incomplete.\r\n");
 			break;
 		default:
-			term_print(term, "%% Command return error %d.\r\n", ret);
+			// term_print(term, "%% Command return error %d.\r\n", ret);
 			break;
 		}
 	}

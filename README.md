@@ -12,6 +12,7 @@ Command BNF syntax inspired by Quagga
 		| option
 		| variable
 		| vararg
+		| keywords
 		;
 
 	literal : [_-a-z0-9]+
@@ -27,6 +28,9 @@ Command BNF syntax inspired by Quagga
 		;
 
 	vararg : .[A-Z]+
+		;
+
+	keywords : '{' literal (variable|option|literal) '}'
 		;
 
 The following is a complex example in `cli-command.c` for command `keyword (t1|t2) {first|second|third INT} stage {ten|eleven|twelve}`. The parser will automatically fill the user-defined argument structure before executing the command.

@@ -21,6 +21,7 @@ bins = chaconne
 chaconne_srcs = cli-command.c cli-term.c cli-tree.c event-loop.c main.c stream.c \
 	    libregexp.c libunicode.c cutils.c hashtable.c vector.c heap.c
 chaconne_srcs += test.c
+chaconne_srcs += cpuid.c
 chaconne_objs = $(chaconne_srcs:.c=.o)
 
 test_bins = t/str_kpair

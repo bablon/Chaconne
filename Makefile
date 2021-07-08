@@ -49,7 +49,7 @@ $(foreach bin,$(bins),$(eval $(call bin_template,$(bin))))
 
 %.o : %.c
 	$(V_CC)$(CC) $(CFLAGS) -c -o $@ $<
-	$(V_CC)$(CC) -MM $< > $*.d
+	@$(CC) -MM $< > $*.d
 
 test : $(test_bins)
 	@echo; echo Testing ...

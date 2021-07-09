@@ -501,52 +501,6 @@ static void free_node(struct cmd_node *node)
 	free(node);
 }
 
-void _cmd_tree_travel(struct cmd_node *tree, struct stream *out)
-{
-	struct cmd_node *node;
-
-	for (node = tree; node; node = node->sibling) {
-		int i;
-		struct token *t;
-
-		stream_puts(out, "node %p, func %p, children %p\r\n",
-			    node, node->func, node->children);
-		for (i = 0; i < node->nr_tokens; i++) {
-			t = &node->tokens[i];
-			stream_puts(out, "  cmd %p - %s\r\n", t->key, t->key);
-			stream_puts(out, "  des %p - %s\r\n", t->desc, t->desc);
-		}
-
-		if (node->keyword) {
-			stream_puts(out, "Keyword:\r\n");
-			_cmd_tree_travel(node->keyword, out);
-		}
-
-		if (node->children) {
-			stream_puts(out, "Children:\r\n");
-			_cmd_tree_travel(node->children, out);
-		}
-	}
-}
-
-void cmd_tree_dump(struct cmd_node *tree, struct stream *out)
-{
-	int i, count = 0;
-	struct cmd_node *node;
-	struct token *token;
-
-	for_each_node_token(tree->children, node, i, token) {
-		count++;
-		if (count == 1) {
-			stream_puts(out, "tree-+-%s\n", token->key);
-		} else if (node->sibling != NULL){
-			stream_puts(out, "     |-%s\n", token->key);
-		} else {
-			stream_puts(out, "     `-%s\n", token->key);
-		}
-	}
-}
-
 struct ls {
 	int width[32];
 	int more[32];
@@ -640,8 +594,6 @@ void cmd_tree_travel(struct cmd_node *tree, struct stream *out)
 	struct ls ls;
 
 	_cmd_tree_dump(tree, out, &ls, 0, 1, 1, 0);
-	// return cmd_tree_dump(tree, out);
-	// return _cmd_tree_travel(tree->children, out);
 }
 
 void cmd_tree_delete(struct cmd_node *tree)

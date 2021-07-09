@@ -64,7 +64,7 @@ COMMAND(cmd_cpuid, NULL,
 			struct range rs[32];
 			int i, r;
 
-			r = range_parse(line, rs, 32);
+			r = range_parse(line, rs, 32, NULL);
 			if (r > 0)
 				term_print(term, "edx:");
 			for (i = 0; i < r; i++) {

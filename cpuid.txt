@@ -1,0 +1,42 @@
+cpuid 0 {
+	eax =	32 0 Max eax value
+	ebx =	32 0 Manufacturer ID 0
+	edx =	32 0 Manufacturer ID 1
+	ecx =	32 0 Manufacturer ID 2
+}
+
+cpuid 1 {
+	eax =	27 21 Extended Family ID,
+		19 16 Extended Model ID,
+		13 12 Processor Type,
+		11 9 Family ID,
+		7 4 Model,
+		3 0 Stepping ID
+
+	ebx =	7 0 Brand Index,
+		15 8 CLFLUSH line size,
+		23 16 Max number of logical processor IDs,
+		31 24 Local APIC ID
+
+	edx =	0 0 fpu, 1 1 vme, 2 2 de, 3 3 pse, 4 4 tsc, 5 5 msr, 6 6 pae,
+		7 7 mce, 8 8 cx8, 9 9 apic, 11 11 sep, 12 12 mtrr, 13 13 pge,
+		14 14 mca, 15 15 cmov, 16 16 pat, 17 17 pse-36, 18 18 psn,
+		19 19 clfsh, 21 21 ds, 22 22 acpi, 23 23 mmx, 24 24 fxsr,
+		25 25 sse, 26 26 sse2, 27 27 ss, 28 28 htt, 29 29 tm, 30 30 ia64,
+		31 31 pbe
+
+	ecx =	0 0 sse3, 1 1 pclmulqdq, 2 2 dtes64, 3 3 monitor, 4 4 ds-cpl,
+		5 5 vmx, 6 6 smx, 7 7 est, 8 8 tm2, 9 9 ssse3, 10 10 cnxt-id,
+		11 11 sdbg, 12 12 fma, 13 13 cx16, 14 14 xtpr, 15 15 pdcm, 17 17 pcid,
+		18 18 dca, 19 19 sse4.1, 20 20 sse4.2, 21 21 x2apic, 22 22 movbe,
+		23 23 popcnt, 24 24 tsc-deadline, 25 25 aes, 26 26 xsave, 27 27 osxsave,
+		28 28 avx, 29 29 f16c, 30 30 rdrnd, 31 31 hypervisor
+}
+
+cpuid 7 0 {
+	eax =	31 0 Max EDX Value
+	ebx =	0 0 fsgsbase,
+		1 1 IA32_TSC_ADJUST,
+		2 2 sgx, 3 3 bmi1,
+		4 4 hle, 5 5 avx2
+}

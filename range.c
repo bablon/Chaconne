@@ -42,7 +42,7 @@ enum {
  * syntax:
  *
  * ranges = range
- * 	| range {',' range}+
+ * 	| range ranges
  * 	;
  *
  * range = range_start ' ' range_end ' ' description
@@ -55,11 +55,11 @@ enum {
  * 	;
  *
  * description = literal
- * 	| literal {' ' literal}+
+ * 	| literal description
  * 	;
  */
 
-int range_parse(const char *desc, struct range *range, size_t size)
+int range_parse(const char *desc, struct range *range, size_t size, char **endptr)
 {
 	int state = start;
 	const char *p = desc;
@@ -70,6 +70,26 @@ int range_parse(const char *desc, struct range *range, size_t size)
 	for (;;) {
 		switch (*p) {
 		case ' ':
+		case '\t':
+		case '\n':
+			if (*p == '\n' && state == range_desc) {
+				entry.desc = s;
+				for (s = p; s > entry.desc; s--)
+					if (*(s-1) != ' ')
+						break;
+				entry.desc_len = s - entry.desc;
+				if (i == size) {
+					printf("%s %d %.*s.\n", __FUNCTION__, __LINE__, (int)(p-desc+1), desc);
+					return -1;
+				}
+				range[i++] = entry;
+				if (endptr)
+					*endptr = (char *)p;
+
+				state = done;
+				break;
+			}
+
 			if (state == range_start) {
 				entry.start = strtoul(s, NULL, 10);
 				state = range_start_space;
@@ -115,6 +135,8 @@ int range_parse(const char *desc, struct range *range, size_t size)
 			range[i++] = entry;
 
 			state = done;
+			if (endptr)
+				*endptr = (char *)p;
 			break;
 		default:
 			if (*p <= '9' && *p >= '0') {

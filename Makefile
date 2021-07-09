@@ -9,20 +9,28 @@ else
 endif
 
 V_CC_0 = @echo "    CC     " $@;
-V_CC_1 = 
+V_CC_1 =
 V_CC = $(V_CC_$(V))
 
 V_LN_0 = @echo "    LINK   " $@;
-V_LN_1 = 
+V_LN_1 =
 V_LN = $(V_LN_$(V))
 
+V_GEN_0 = @echo "    GEN    " $@;
+V_GEN_1 =
+V_GEN = $(V_GEN_$(V))
+
 bins = chaconne
+
+genfils = cpuid_desc.c
 
 chaconne_srcs = cli-command.c cli-term.c cli-tree.c event-loop.c main.c stream.c \
 	    libregexp.c libunicode.c cutils.c hashtable.c vector.c heap.c
 chaconne_srcs += test.c
-chaconne_srcs += cpuid.c
 chaconne_srcs += range.c
+chaconne_srcs += cpuid.c
+chaconne_srcs += cpuid_info.c
+chaconne_srcs += cpuid_desc.c
 chaconne_objs = $(chaconne_srcs:.c=.o)
 
 test_bins = t/str_kpair
@@ -34,6 +42,11 @@ all : $(bins)
 
 -include *.d
 -include t/*.d
+
+cpuid_desc.c : cpuid.txt
+	@cp $< .cpuid.desc
+	$(V_GEN)xxd -i .cpuid.desc > $@
+	@rm .cpuid.desc
 
 define bin_template
 allobjs += $($(1)_objs)
@@ -64,4 +77,4 @@ $(foreach bin,$(test_bins),$(eval $(call bin_template,$(bin))))
 .PHONY: clean
 
 clean:
-	$(RM) $(bins) $(test_bins) $(allobjs) *.d t/*.d
+	$(RM) $(genfils) $(bins) $(test_bins) $(allobjs) *.d t/*.d

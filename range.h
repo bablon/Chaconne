@@ -10,6 +10,6 @@ struct range {
 	size_t desc_len;
 };
 
-int range_parse(const char *desc, struct range *range, size_t size);
+int range_parse(const char *desc, struct range *range, size_t size, char **endptr);
 
 #endif

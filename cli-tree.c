@@ -579,8 +579,6 @@ void _cmd_tree_dump(struct cmd_node *tree, struct stream *out,
 			} else {
 				if (ls->more[i + 1])
 					stream_puts(out, "| ");
-				else if (opt)
-					stream_puts(out, "| ");
 				else
 					stream_puts(out, "  ");
 			}
@@ -609,7 +607,10 @@ void _cmd_tree_dump(struct cmd_node *tree, struct stream *out,
 	}
 
 	ls->width[level] = len;
-	ls->more[level] = !last;
+	if (tree->parent && tree->parent->keyword) {
+		ls->more[level] = 1;
+	} else
+		ls->more[level] = !last;
 
 	if (tree->children == NULL && tree->keyword == NULL)
 		stream_puts(out, "\r\n");

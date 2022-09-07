@@ -2,8 +2,8 @@
 #include <stdio.h>
 #include "calc.h"
 
-int yylex(void);
-void yyerror(char *s);
+int yylex(void *scaner);
+void yyerror(void *scaner, char *s);
 
 static struct number calc(int op, int opsize, struct number a, struct number b);
 %}
@@ -13,6 +13,9 @@ static struct number calc(int op, int opsize, struct number a, struct number b);
 %left '+' '-'
 %left '*' '/'
 %nonassoc UMINUS
+
+%lex-param { void *scaner }
+%parse-param { void *scaner }
 
 %%
 
@@ -40,7 +43,7 @@ expr :
 
 %%
 
-void yyerror(char *s)
+void yyerror(void *scaner, char *s)
 {
 	fprintf(stderr, "%s\n", s);
 }
@@ -100,7 +103,6 @@ struct number calc(int op, int opsize, struct number a, struct number b)
 		}
 		break;
 	default:
-		yyerror("invalid operation");
 		num.type = INTEGER;
 		num.ival = 0;
 		break;

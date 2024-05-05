@@ -283,7 +283,7 @@ COMMAND(cmd_mdio, NULL,
 	"read operation\n"
 	"write operation\n"
 	"ethernet interface name\n"
-	"register format phy.reg[@(page|dev)].bit_h:bit_l\n"
+	"register format phy.reg[@(page|dev)][.bit_h:bit_l]\n"
 	"register data to write\n")
 {
 	int ret = 0;

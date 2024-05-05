@@ -56,6 +56,7 @@ chaconne_srcs += range.c
 chaconne_srcs += cpuid.c
 chaconne_srcs += cpuid_info.c
 chaconne_srcs += cpuid_desc.c
+chaconne_srcs += mdio.c
 
 ifneq ($(has_lex_yacc),)
 chaconne_srcs += calc_y.c
